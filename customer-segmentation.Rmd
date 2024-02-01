@@ -1,0 +1,261 @@
+---
+title: "customer-segmentation"
+author: "Sofyan Adi Saputra"
+date: "2024-01-29"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. DATA PREPARATION
+
+Dataset yang digunakan : <https://www.kaggle.com/datasets/sofyanadi/customer-segmentation>
+
+```{r}
+
+#Load Dataset
+#path/lokasi dataset
+df <- read.csv("C:/Users/sofyan/Documents/R/Mini Project/customer-segmentation/Datasets/customer_segments.csv", sep = "\t") 
+
+#Vector untuk Menyimpan Nama Field
+field_yang_digunakan <- df[c("Jenis.Kelamin", "Umur", "Profesi")]
+field_yang_digunakan
+
+#Konversi Data dengan data.matrix
+pelanggan_matrix <- data.matrix(df[c("Jenis.Kelamin", "Profesi", "Tipe.Residen")])
+pelanggan_matrix
+
+#Penggabungan data pelanggan dan data pelanggan_matriks
+pelanggan <- data.frame(df, pelanggan_matrix)
+pelanggan
+
+#Menormalisasikan Nilai Belanja
+pelanggan$NilaiBelanjaSetahun <- pelanggan$NilaiBelanjaSetahun / 1000000
+pelanggan
+
+#Membuat Data Master
+Profesi <- unique(pelanggan[c("Profesi","Profesi.1")])
+Jenis.Kelamin <- unique(pelanggan[c("Jenis.Kelamin","Jenis.Kelamin.1")])
+Tipe.Residen <- unique(pelanggan[c("Tipe.Residen","Tipe.Residen.1")])
+pelanggan[c("Profesi","Profesi.1", "Jenis.Kelamin" ,"Jenis.Kelamin.1","Tipe.Residen", "Tipe.Residen.1")]
+```
+
+Terlihat, teks "Pria" diubah menjadi angka 1, "Wanita" diubah menjadi angka 2, "Wiraswasta" pada kolom profesi diubah menjadi angka 5, "Sector" pada tipe residen menjadi 2 dan seterusnya.
+
+Akhiran .1 ditambahkan karena di variable pelanggan sudah ada nama kolom yang sama. Sebagai contoh kolom "Jenis.Kelamin" yang terdapat pada pelanggan_matrix sudah ada juga di variable pelanggan. Jadi ketika digabungkan, R akan menambahkan akhiran .1 untuk kolom "Jenis.Kelamin" yang terdapat di pelanggan_matrix.
+
+Terlihat data telah diringkas dengan teks kategori beserta pasangan numeriknya.
+
+# 2. CLUSTERING DAN K-MEANS ALGORITHM
+
+```{r}
+
+#Fungsi K-Means
+field_yang_digunakan = c("Jenis.Kelamin.1", "Umur", "Profesi.1", "Tipe.Residen.1","NilaiBelanjaSetahun")
+
+#Bagian K-Means
+set.seed(1)
+#fungsi kmeans untuk membentuk 5 cluster dengan 25 skenario random dan simpan ke dalam variable segmentasi
+segmentasi <- kmeans(x=pelanggan[field_yang_digunakan][c("Jenis.Kelamin.1", "Umur", "Profesi.1", "Tipe.Residen.1","NilaiBelanjaSetahun")], centers=5, nstart=25)
+#tampilkan hasil k-means
+segmentasi
+
+#Analisa Hasil Clustering Vector - Penggabungan hasil cluster
+segmentasi$cluster
+pelanggan$cluster <- segmentasi$cluster
+str(pelanggan)
+
+#Analisa Hasil Cluster Size
+#List data pada Cluster
+which(pelanggan$cluster == 1)
+which(pelanggan$cluster == 2)
+which(pelanggan$cluster == 3)
+which(pelanggan$cluster == 4)
+which(pelanggan$cluster == 5)
+
+#Jumlah data pada Cluster
+length(which(pelanggan$cluster == 1))
+length(which(pelanggan$cluster == 2))
+length(which(pelanggan$cluster == 3))
+length(which(pelanggan$cluster == 4))
+length(which(pelanggan$cluster == 5))
+
+#Melihat Data pada Cluster ke-N
+#Melihat data cluster ke 3-5
+pelanggan[which(pelanggan$cluster == 3),]
+pelanggan[which(pelanggan$cluster == 4),]
+pelanggan[which(pelanggan$cluster == 5),]
+
+#Analisa Hasil Cluster Means
+segmentasi$centers
+
+#Analisa Hasil Sum of Squares
+#Membandingkan dengan 2 cluster kmeans, masing-masing 2 dan 5
+set.seed(1)
+kmeans(x=pelanggan[field_yang_digunakan], centers=2, nstart=25)
+set.seed(1)
+kmeans(x=pelanggan[field_yang_digunakan], centers=5, nstart=25)
+
+#Available Components
+segmentasi$withinss
+segmentasi$cluster
+segmentasi$tot.withinss
+```
+
+Hasil ini dapat dibagi dalam lima bagian, dengan penjelasan sebagai berikut:
+
+1.  Ukuran / Jumlah titik data pada tiap cluster
+2.  Nilai rata-rata (centroid) dari tiap cluster
+3.  Pembagian cluster dari tiap elemen data berdasarkan posisisnya
+4.  Jumlah jarak kuadrat dari tiap titik ke centroidnya
+5.  Komponen informasi lain yang terkandung di dalam objek ini
+
+K-means telah membagi dataset pelanggan dengan 5 cluster dengan jumlah total 50 data, yang juga merupakan jumlah data total pelanggan., dimana:
+
+1.  Cluster ke-1 memiliki 12 data
+2.  Cluster ke-2 memiliki 10 data
+3.  Cluster ke-3 memiliki 5 data
+4.  Cluster ke-4 memiliki 14 data
+5.  Cluster ke-5 memiliki 9 data
+
+Cluster means adalah hasil nilai rata-rata atau titik sentral (centroid) dari seluruh titik tiap cluster. Pada tabel diatas:
+
+-   Kolom pertama yang berisi angka 1 sampai dengan 5 adalah mewakili nomor cluster.
+
+-   Kolom Kelamin.1 menunjukkan nilai rata-rata dari data jenis kelamin yang telah dikonversi menjadi numerik, dengan angka 1 mewakili Pria dan angka 2 mewakili wanita.
+
+Penjabaran Cluster
+
+1.  Pada cluster 1 kolom Jenis.Kelamin.1 terlihat bahwa nilainya adalah 1.75, artinya data bersifat campuran namun cenderung ke wanita (2). Nah, untuk cluster ke-3 berupa angka 1.40 artinya data bersifat campuran namun cenderung ke Pria (1). Lalu pada cluster ke 4 dan 5 bernilai 2.00 yang berarti cluster hanya berisi data profil berjenis kelamin wanita.
+
+2.  Kolom Umur adalah representasi dari dataset awal tanpa mengalami konversi. Terlihat untuk cluster ke-1 umur rata-rata adalah 31 tahun, umur 52 tahun untuk cluster ke-2, dan seterusnya.
+
+3.  Kolom Profesi.1 menunjukkan nilai rata-rata data Profesi untuk tiap cluster yang telah dikonversi menjadi numerik, yaitu angka 1 s/d 5. Angka 1, 2, 3, 4, dan 5 di kolom ini masing-masingnya secara berurutan mewakili Ibu Rumah Tangga, Mahasiswa, Pelajar, Professional, dan Wiraswasta. Terlihat untuk seluruh cluster bahwa nilai profesi berada dalam rentang 3.5 s/d 4.2 (3.5\< profesi \<= 4.2). Hal ini menunjukkan bahwa profesi cenderung ke ke Professional, dan secara tegas cluster kelima memiliki profesi berupa Professional.
+
+4.  Kolom Tipe.Residen.1 menunjukkan representasi data Tipe.Residen yang telah dikonversi menjadi numerik dengan angka 1 mewakili Cluster dan 2 mewakili Sector. Ini juga didapatkan dari hasil konversi data menjadi numerik pada praktek sebelumnya. Untuk seluruh cluster, terlihat data cukup tersebar antara Sector dan Cluster terutama untuk cluster ke-5 dimana nilai kolom ini di angka 1.555.
+
+5.  Terakhir, kolom NilaiBelanjaSetahun cukup signifikan pembagiannya untuk tiap cluster. Cluster ke-3 dan ke-5 memiliki nilai belanja lebih tinggi dibandingkan ketiga cluster lainnya.
+
+# 3. DATA VISUALIZATION
+
+```{r}
+
+#install package
+install.packages("ggplot2")
+#import library
+library(ggplot2)
+
+#Simulasi Jumlah Cluster dan SS
+set.seed(1)
+sse <- sapply(1:10, 
+              function(param_k){
+                kmeans(pelanggan[field_yang_digunakan], param_k, nstart=25)$tot.withinss
+              })
+sse
+
+#Grafik Elbow Effect
+jumlah_cluster_max <- 10
+ssdata = data.frame(cluster=c(1:jumlah_cluster_max),sse)
+ggplot(ssdata, aes(x=cluster,y=sse)) +
+  geom_line(color="red") + geom_point() +
+  ylab("Within Cluster Sum of Squares") + xlab("Jumlah Cluster") +
+  geom_text(aes(label=format(round(sse, 2), nsmall = 2)),hjust=-0.2, vjust=-0.5) +
+  scale_x_discrete(limits=c(1:jumlah_cluster_max))
+```
+
+Metrik elbow method yang digunakan sebagai basis justifikasi adalah Sum of Squares (SS), atau lebih tepatnya komponen **tot.withinss** (total penjumlahan dari tiap SS dari withinss) dari **objek kmeans**.
+
+Metrik ini akan dicari progressive nilai tot.withinss untuk tiap kombinasi jumlah cluster, dan disimpan dalam bentuk vector di R.
+
+Untuk keperluan ini, function sapply digunakan. Function sapply akan digunakan untuk memanggil function kmeans untuk suatu range jumlah cluster. Range ini akan kita gunakan 1 sampai dengan 10.
+
+Terlihat jika jumlah cluster optimal yang bisa digunakan adalah 5, dan ini menjadi keputusan untuk menentukan jumlah segmentasi pelanggan.
+
+# 4. PEMAKETAN MODEL K-MEANS
+
+```{r}
+
+#Menamakan Segmen
+Segmen.Pelanggan <- data.frame(cluster=c(1,2,3,4,5), Nama.Segmen=c("Silver Youth Gals", "Diamond Senior Member", "Gold Young Professional", "Diamond Professional", "Silver Mid Professional"))
+
+#Menggabungkan Referensi
+Identitas.Cluster <- list(Profesi=Profesi, Jenis.Kelamin=Jenis.Kelamin, Tipe.Residen=Tipe.Residen, Segmentasi=segmentasi, Segmen.Pelanggan=Segmen.Pelanggan, field_yang_digunakan=field_yang_digunakan)
+
+#Menyimpan Objek dalam Bentuk File
+saveRDS(Identitas.Cluster,"cluster.rds")
+```
+
+Penamaan Cluster
+
+-   Cluster 1 : Silver Youth Gals: alasannya adalah karena umurnya rata-rata adalah 20, wanita semua, profesinya bercampur antar pelajar dan professional serta pembelanjaan sekitar 6 juta.
+
+-   Cluster 2 : Diamond Senior Member: alasannya adalah karena umurnya rata-rata adalah 61 tahun dan pembelanjaan di atas 8 juta.
+
+-   Cluster 3 : Gold Young Professional: alasannya adalah karena umurnya rata-rata adalah 31 tahun, professional dan pembelanjaan cukup besar.
+
+-   Cluster 4 : Diamond Profesional: alasannya adalah karena umurnya rata-rata adalah 42 tahun, pembelanjaan paling tinggi dan semuanya professional.
+
+-   Cluster 5 : Silver Mid Professional: alasannya adalah karena umurnya rata-rata adalah 52 tahun dan pembelanjaan sekitar 6 juta.
+
+Untuk menyimpan objek yang telah dubuat ke dalam file digunakan function saveRDS. File ini kemudian dapat dibuka kembali sebagai objek ke depannya. Objek yang sudah digabungkan sebelumnya sudah memiliki semua aset yang diperlukan untuk mengalokasikan data baru ke segmen yang sesuai.
+
+# 5. INPUT DATA BARU
+
+```{r}
+
+#Data Baru
+databaru <- data.frame(Customer_ID="CUST-100", Nama.Pelanggan="Rudi Wilamar",Umur=20,Jenis.Kelamin="Wanita",Profesi="Pelajar",Tipe.Residen="Cluster",NilaiBelanjaSetahun=3.5)
+databaru
+
+#Memuat Objek Clustering dari File
+Identitas.Cluster <- readRDS(file = "cluster.rds")
+print(Identitas.Cluster)
+
+#Merge dengan Data Referensi
+#Masukkan perintah untuk penggabungan data
+databaru <- merge(databaru, Identitas.Cluster$Profesi)
+databaru <- merge(databaru, Identitas.Cluster$Jenis.Kelamin)
+databaru <- merge(databaru, Identitas.Cluster$Tipe.Residen)
+databaru
+
+#Menentukan Cluster
+#menentukan data baru di cluster mana
+which.min(sapply( 1:5, function( x ) sum( ( databaru[Identitas.Cluster$field_yang_digunakan] - Identitas.Cluster$Segmentasi$centers[x,])^2 ) ))
+Identitas.Cluster$Segmen.Pelanggan[which.min(sapply( 1:5, function( x ) sum( ( databaru[Identitas.Cluster$field_yang_digunakan] - Identitas.Cluster$Segmentasi$centers[x,])^2 ) )),]
+```
+
+Dengan menggunakan model dan paket yang telah dibuat sebelumnya, maka dapat dilakukan uji data baru dengaan memuat object clustering yang sudah ada.
+
+Data baru yang dimasukkan : Customer_ID="CUST-100", Nama.Pelanggan="Rudi Wilamar",Umur=20,Jenis.Kelamin="Wanita",Profesi="Pelajar",Tipe.Residen="Cluster",NilaiBelanjaSetahun=3.5
+
+Data baru kemudian di merge dengan referensi yang ada kemudian dapat ditentukan cluster mana yang sesuai dengan data baru yang dimasukkan tersebut dengan tahapan berikut:
+
+-   Mencari jarak kuadrat minimum atau terdekat
+
+-   Dari kolom numerik data baru tersebut
+
+-   Ke centroid kolom terkait
+
+-   Dari seluruh cluster yang ada
+
+Dimana:
+
+-   min: Merupakan function untuk mencari nilai minimum
+
+-   1:5 : Adalah range nomor cluster dari 1 sampai dengan 5 (atau lebih sesuai dengan ukuran cluster)
+
+-   sapply: Digunakan untuk melakukan iterasi berdasarkan range (dalam kasus ini 1 s/d 5)
+
+-   function(x): Digunakan untuk proses dengan x diisi 1 s/d 5 per proses
+
+-   (data[kolom] – objekkmeans\$centers[x,]) \^2: Adalah jarak kuadrat data. Ingat centers adalah komponen dari objek kmeans.
+
+-   sum: Digunakan untuk menjumlahkan jarak kuadrat
+
+Yang kemudian didapatkan hasil **Cluster 4 Diamond Professional**.
