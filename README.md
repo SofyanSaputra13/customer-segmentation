@@ -3,7 +3,7 @@ Analisis Segmentasi Pelanggan Menggunakan K-Means
 
 Program ini dikembangkan melalui RStudio menggunakan bahasa pemrograman R, memiliki tujuan khusus untuk melakukan segmentasi pelanggan menggunakan algoritma k-means. Program dapat mengelompokkan pelanggan ke dalam cluster berdasarkan karakteristik tertentu, memungkinkan perusahaan untuk meningkatkan strategi pemasaran dan manajemen hubungan pelanggan (CRM) dengan pendekatan yang lebih terfokus.
 
-Manfaat Program
+Manfaat Program:
 1. Optimasi Strategi Bisnis:
 Dengan penerapan algoritma k-means, program ini membantu perusahaan mengoptimalkan strategi bisnis dengan memahami kebutuhan dan preferensi setiap kelompok pelanggan. Ini dapat berdampak positif pada performa
 bisnis secara keseluruhan.
